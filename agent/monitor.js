@@ -66,6 +66,7 @@ ${warningEvents.length ? warningEvents.join("\n") : "(aucun)"}`;
     },
     body: JSON.stringify({
       model: OPENROUTER_MODEL,
+      max_tokens: 400,
       messages: [
         {
           role: "system",
