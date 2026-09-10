@@ -8,7 +8,7 @@ const K8S_API = `https://${process.env.KUBERNETES_SERVICE_HOST}:${process.env.KU
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL || "anthropic/claude-3.5-haiku";
+  process.env.OPENROUTER_MODEL || "anthropic/claude-haiku-4.5";
 
 async function k8sGet(path) {
   const res = await fetch(`${K8S_API}${path}`, {

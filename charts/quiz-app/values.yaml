@@ -33,7 +33,7 @@ ingress:
 agent:
   enabled: true
   schedule: "*/5 * * * *"
-  model: "anthropic/claude-3.5-haiku"
+  model: "anthropic/claude-haiku-4.5"
 
 # Secrets are never committed with real values: the CI deploy job overrides
 # them via --set from GitHub Actions secrets. For a manual `helm install`,

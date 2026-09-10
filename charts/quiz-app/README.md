@@ -72,7 +72,7 @@ kubectl -n quiz-app create job agent-manual --from=cronjob/quiz-app-agent
 Secret requis : `OPENROUTER_API_KEY` (voir tableau plus bas). Sans cette clé,
 l'agent continue de logger l'état brut des pods/événements mais saute
 l'analyse IA (pas de crash). Le modèle utilisé est configurable via
-`agent.model` dans `values.yaml` (défaut : `anthropic/claude-3.5-haiku`).
+`agent.model` dans `values.yaml` (défaut : `anthropic/claude-haiku-4.5`).
 
 ## Déploiement via la pipeline GitHub Actions
 
