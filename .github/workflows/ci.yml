@@ -97,6 +97,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Helm upgrade
+        # The self-hosted runner here is Windows, whose default shell for
+        # `run:` steps is PowerShell (where `\` isn't a line continuation).
+        shell: bash
         run: |
           helm upgrade --install quiz-app ./charts/quiz-app \
             --namespace quiz-app --create-namespace \

@@ -41,3 +41,6 @@ coverage/
 # mcp
 .mcp.json
 .playwright-mcp/
+
+# Local GitHub Actions self-hosted runner install (contains credentials)
+actions-runner/
