@@ -97,18 +97,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Helm upgrade
-        # The self-hosted runner here is Windows, whose default shell for
-        # `run:` steps is PowerShell (where `\` isn't a line continuation).
-        shell: bash
+        # The self-hosted runner here is Windows; default shell for run:
+        # steps is PowerShell, so line continuation uses a backtick, not \.
+        # (Explicitly avoid `shell: bash` — on this machine it resolves to
+        # the WSL bash.exe shim in System32, which has neither helm nor
+        # kubectl on its PATH.)
         run: |
-          helm upgrade --install quiz-app ./charts/quiz-app \
-            --namespace quiz-app --create-namespace \
-            --set image.registry=${{ needs.setup.outputs.image_base }} \
-            --set image.tag=${{ github.sha }} \
-            --set secrets.postgresPassword="${{ secrets.POSTGRES_PASSWORD }}" \
-            --set secrets.jwtSecret="${{ secrets.JWT_SECRET }}" \
-            --set secrets.adminUsername="${{ secrets.ADMIN_USERNAME }}" \
-            --set secrets.adminPassword="${{ secrets.ADMIN_PASSWORD }}" \
-            --set secrets.resendApiKey="${{ secrets.RESEND_API_KEY }}" \
-            --set secrets.fromEmail="${{ secrets.FROM_EMAIL }}" \
+          helm upgrade --install quiz-app ./charts/quiz-app `
+            --namespace quiz-app --create-namespace `
+            --set image.registry=${{ needs.setup.outputs.image_base }} `
+            --set image.tag=${{ github.sha }} `
+            --set secrets.postgresPassword="${{ secrets.POSTGRES_PASSWORD }}" `
+            --set secrets.jwtSecret="${{ secrets.JWT_SECRET }}" `
+            --set secrets.adminUsername="${{ secrets.ADMIN_USERNAME }}" `
+            --set secrets.adminPassword="${{ secrets.ADMIN_PASSWORD }}" `
+            --set secrets.resendApiKey="${{ secrets.RESEND_API_KEY }}" `
+            --set secrets.fromEmail="${{ secrets.FROM_EMAIL }}" `
             --set secrets.openrouterApiKey="${{ secrets.OPENROUTER_API_KEY }}"
