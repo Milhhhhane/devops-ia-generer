@@ -52,7 +52,9 @@ const pool = new pg.Pool({
   connectionTimeoutMillis: 2000,
 });
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY
+  ? new Resend(process.env.RESEND_API_KEY)
+  : null;
 
 // Admin config
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
@@ -356,6 +358,13 @@ app.post("/api/results", resultsLimiter, async (req, res) => {
 });
 
 async function sendResultEmail(user, score, totalQuestions, answers) {
+  if (!resend) {
+    console.warn(
+      `RESEND_API_KEY not set — skipping result email to ${user.email}`
+    );
+    return;
+  }
+
   const percentage = Math.round((score / totalQuestions) * 100);
 
   const answersHtml = answers

@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ghcr.io requires a lowercase image path; github.repository preserves case.
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      image_base: ${{ steps.vars.outputs.image_base }}
+    steps:
+      - id: vars
+        run: echo "image_base=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+  lint-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: cd backend && npm install && node --check server.js
+
+  lint-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci && npm run build
+
+  build:
+    needs: [setup, lint-backend, lint-frontend]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - component: backend
+            context: ./backend
+          - component: frontend
+            context: .
+          - component: db
+            context: ./database
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: |
+            ${{ needs.setup.outputs.image_base }}/${{ matrix.component }}:${{ github.sha }}
+            ${{ needs.setup.outputs.image_base }}/${{ matrix.component }}:latest
+
+  # Reports HIGH/CRITICAL findings but doesn't block the pipeline
+  # (continue-on-error) since deploy is a manual/approval-gated job anyway.
+  scan:
+    needs: [setup, build]
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        component: [backend, frontend, db]
+    steps:
+      - name: Trivy scan - ${{ matrix.component }}
+        run: |
+          docker run --rm aquasec/trivy:latest image \
+            --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}" \
+            --exit-code 1 --severity HIGH,CRITICAL --format table \
+            "${{ needs.setup.outputs.image_base }}/${{ matrix.component }}:${{ github.sha }}"
+
+  # Requires a self-hosted runner (label "k3s-local") registered on the
+  # machine that hosts the k3s/k3d cluster — a GitHub-hosted runner cannot
+  # reach a cluster that only exists on your machine. Add an environment
+  # protection rule on "local-k3s" (Settings > Environments) if you want a
+  # manual approval gate before this job runs.
+  deploy:
+    needs: [setup, scan]
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, k3s-local]
+    environment: local-k3s
+    steps:
+      - uses: actions/checkout@v4
+      - name: Helm upgrade
+        run: |
+          helm upgrade --install quiz-app ./charts/quiz-app \
+            --namespace quiz-app --create-namespace \
+            --set image.registry=${{ needs.setup.outputs.image_base }} \
+            --set image.tag=${{ github.sha }} \
+            --set secrets.postgresPassword="${{ secrets.POSTGRES_PASSWORD }}" \
+            --set secrets.jwtSecret="${{ secrets.JWT_SECRET }}" \
+            --set secrets.adminUsername="${{ secrets.ADMIN_USERNAME }}" \
+            --set secrets.adminPassword="${{ secrets.ADMIN_PASSWORD }}" \
+            --set secrets.resendApiKey="${{ secrets.RESEND_API_KEY }}" \
+            --set secrets.fromEmail="${{ secrets.FROM_EMAIL }}"

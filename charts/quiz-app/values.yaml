@@ -1,0 +1,39 @@
+image:
+  registry: ghcr.io/milhhhhane/devops-ia-generer
+  tag: latest
+  pullPolicy: IfNotPresent
+
+frontend:
+  replicas: 1
+  containerPort: 80
+  service:
+    port: 80
+
+backend:
+  replicas: 1
+  containerPort: 3007
+  service:
+    port: 3007
+
+postgres:
+  containerPort: 5432
+  database: quiz_db
+  user: quiz_user
+  storage: 1Gi
+  storageClassName: local-path
+
+ingress:
+  enabled: true
+  className: traefik
+  host: quiz.local
+
+# Secrets are never committed with real values: the CI deploy job overrides
+# them via --set from GitHub Actions secrets. For a manual `helm install`,
+# pass your own -f secrets.yaml or --set flags.
+secrets:
+  postgresPassword: ""
+  jwtSecret: ""
+  adminUsername: "admin"
+  adminPassword: ""
+  resendApiKey: ""
+  fromEmail: "Quiz App <noreply@votredomaine.com>"
