@@ -27,6 +27,14 @@ ingress:
   className: traefik
   host: quiz.local
 
+# CronJob that periodically checks pod/event health in this namespace and
+# asks an LLM (via OpenRouter) for a plain-language diagnosis, logged to
+# stdout (kubectl logs). Read-only RBAC scoped to this namespace only.
+agent:
+  enabled: true
+  schedule: "*/5 * * * *"
+  model: "anthropic/claude-3.5-haiku"
+
 # Secrets are never committed with real values: the CI deploy job overrides
 # them via --set from GitHub Actions secrets. For a manual `helm install`,
 # pass your own -f secrets.yaml or --set flags.
@@ -37,3 +45,4 @@ secrets:
   adminPassword: ""
   resendApiKey: ""
   fromEmail: "Quiz App <noreply@votredomaine.com>"
+  openrouterApiKey: ""

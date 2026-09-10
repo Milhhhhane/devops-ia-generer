@@ -50,6 +50,8 @@ jobs:
             context: .
           - component: db
             context: ./database
+          - component: agent
+            context: ./agent
     steps:
       - uses: actions/checkout@v4
       - uses: docker/login-action@v3
@@ -73,7 +75,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        component: [backend, frontend, db]
+        component: [backend, frontend, db, agent]
     steps:
       - name: Trivy scan - ${{ matrix.component }}
         run: |
@@ -105,4 +107,5 @@ jobs:
             --set secrets.adminUsername="${{ secrets.ADMIN_USERNAME }}" \
             --set secrets.adminPassword="${{ secrets.ADMIN_PASSWORD }}" \
             --set secrets.resendApiKey="${{ secrets.RESEND_API_KEY }}" \
-            --set secrets.fromEmail="${{ secrets.FROM_EMAIL }}"
+            --set secrets.fromEmail="${{ secrets.FROM_EMAIL }}" \
+            --set secrets.openrouterApiKey="${{ secrets.OPENROUTER_API_KEY }}"

@@ -51,6 +51,29 @@ curl -H "Host: quiz.local" http://localhost:8087/health
 
 Pour supprimer le cluster de test : `k3d cluster delete quiz-app`.
 
+## Agent de supervision (CronJob)
+
+Un `CronJob` (`agent.enabled: true` par défaut, toutes les 5 min) surveille le
+namespace : il liste les pods et les événements d'avertissement via l'API
+Kubernetes (`ServiceAccount` + `Role` en lecture seule, scopés à ce namespace —
+`get/list/watch` sur `pods` et `events`, rien d'autre), envoie ce résumé à un
+LLM via [OpenRouter](https://openrouter.ai) pour un diagnostic en langage
+naturel, et logue le tout (`kubectl logs`). Aucune alerte externe : c'est un
+outil de supervision passif, à consulter à la demande.
+
+```bash
+# Voir le dernier rapport
+kubectl -n quiz-app logs -l app.kubernetes.io/component=agent --tail=100
+
+# Déclencher un passage immédiat sans attendre le planning
+kubectl -n quiz-app create job agent-manual --from=cronjob/quiz-app-agent
+```
+
+Secret requis : `OPENROUTER_API_KEY` (voir tableau plus bas). Sans cette clé,
+l'agent continue de logger l'état brut des pods/événements mais saute
+l'analyse IA (pas de crash). Le modèle utilisé est configurable via
+`agent.model` dans `values.yaml` (défaut : `anthropic/claude-3.5-haiku`).
+
 ## Déploiement via la pipeline GitHub Actions
 
 Le job `deploy` de `.github/workflows/ci.yml` exécute le même `helm upgrade --install`
@@ -78,6 +101,7 @@ GitHub :
 | `ADMIN_PASSWORD`    | Mot de passe admin                      |
 | `RESEND_API_KEY`    | Clé API Resend (optionnel — voir ci-dessous) |
 | `FROM_EMAIL`        | Adresse d'expédition des emails         |
+| `OPENROUTER_API_KEY`| Clé API OpenRouter pour l'agent de supervision (optionnel) |
 
 `GITHUB_TOKEN` (fourni automatiquement par GitHub Actions) suffit pour
 s'authentifier auprès de `ghcr.io` en push comme en lecture — aucun secret

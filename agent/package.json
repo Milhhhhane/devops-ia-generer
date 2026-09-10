@@ -1,0 +1,9 @@
+{
+  "name": "quiz-app-agent",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "monitor.js",
+  "scripts": {
+    "start": "node monitor.js"
+  }
+}

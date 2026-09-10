@@ -21,6 +21,9 @@ const generalLimiter = rateLimit({
   message: { error: "Trop de requêtes, veuillez réessayer plus tard" },
   standardHeaders: true,
   legacyHeaders: false,
+  // /health is hit repeatedly by k8s/Docker health probes and must never
+  // be throttled, or probe failures trigger container restarts.
+  skip: (req) => req.path === "/health",
 });
 
 // Rate limiting - strict for registration (5 per 15 min per IP)
